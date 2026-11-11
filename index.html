@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>単語めくり</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      background: #f3eee4;
+      font-family: sans-serif;
+    }
+    .count {
+      color: #6f685d;
+      margin-bottom: 8px;
+    }
+    .card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      min-height: 60vh;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .word {
+      font-size: 48px;
+      font-weight: bold;
+    }
+    .answer {
+      display: none;
+      margin-top: 24px;
+    }
+    .card.open .answer {
+      display: block;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .controls button {
+      flex: 1;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      background: white;
+    }
+    #checkBtn.on {
+      background: #d4892a;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="count" class="count"></div>
+
+  <div id="card" class="card">
+    <div id="word" class="word"></div>
+    <div class="answer">
+      <p id="meaning"></p>
+      <p id="reading"></p>
+      <p id="example"></p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="prevBtn">前へ</button>
+    <button id="checkBtn">わからない</button>
+    <button id="nextBtn">次へ</button>
+  </div>
+
+  <script>
+    // ① 単語データ
+    const words = [
+      {
+        word: "serendipity",
+        meaning: "思いがけない幸運な発見",
+        reading: "/ˌserənˈdɪpəti/ セレンディピティ",
+        example: "I found this café by serendipity."
+      },
+      {
+        word: "procrastinate",
+        meaning: "先延ばしにする",
+        reading: "/prəˈkræstɪneɪt/ プラクラスティネイト",
+        example: "I'll stop procrastinating tomorrow."
+      },
+      {
+        word: "awkward",
+        meaning: "気まずい、ぎこちない",
+        reading: "/ˈɔːkwərd/ オークワード",
+        example: "That was an awkward silence."
+      }
+    ];
+
+    // ② 状態（今どこを見ているか、どれにチェックしたか）
+    let index = 0;
+    let checked = JSON.parse(localStorage.getItem("checked") || "[]");
+
+    const card = document.getElementById("card");
+    const checkBtn = document.getElementById("checkBtn");
+
+    // ③ 画面に表示する
+    function show() {
+      const w = words[index];
+      document.getElementById("word").textContent = w.word;
+      document.getElementById("meaning").textContent = w.meaning;
+      document.getElementById("reading").textContent = w.reading;
+      document.getElementById("example").textContent = w.example;
+      document.getElementById("count").textContent = (index + 1) + " / " + words.length;
+      card.classList.remove("open");
+      updateCheckButton();
+    }
+
+    function updateCheckButton() {
+      const w = words[index].word;
+      if (checked.includes(w)) {
+        checkBtn.textContent = "✓ 要復習";
+        checkBtn.classList.add("on");
+      } else {
+        checkBtn.textContent = "わからない";
+        checkBtn.classList.remove("on");
+      }
+    }
+
+    // ④ 動き
+    function goNext() {
+      if (index < words.length - 1) {
+        index = index + 1;
+        show();
+      }
+    }
+
+    function goPrev() {
+      if (index > 0) {
+        index = index - 1;
+        show();
+      }
+    }
+
+    function saveChecked() {
+      localStorage.setItem("checked", JSON.stringify(checked));
+    }
+
+    // ⑤ 操作とつなぐ
+    card.addEventListener("click", function () {
+      card.classList.toggle("open");
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", goNext);
+    document.getElementById("prevBtn").addEventListener("click", goPrev);
+
+    checkBtn.addEventListener("click", function () {
+      const w = words[index].word;
+      if (checked.includes(w)) {
+        checked = checked.filter(function (x) {
+          return x !== w;
+        });
+      } else {
+        checked.push(w);
+      }
+      saveChecked();
+      updateCheckButton();
+    });
+
+    let startX = 0;
+    card.addEventListener("touchstart", function (e) {
+      startX = e.touches[0].clientX;
+    });
+    card.addEventListener("touchend", function (e) {
+      const dx = e.changedTouches[0].clientX - startX;
+      if (dx < -60) {
+        goNext();
+      } else if (dx > 60) {
+        goPrev();
+      }
+    });
+
+    // ⑥ 最初の1枚を表示
+    show();
+  </script>
+</body>
+</html>
